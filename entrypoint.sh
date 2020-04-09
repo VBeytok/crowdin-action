@@ -1,6 +1,7 @@
 #!/bin/sh
 
-ls -al
+printenv
+
 
 crowdin $1
 
