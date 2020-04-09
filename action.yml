@@ -1,11 +1,24 @@
-name: 'crowdin'
-description: 'Upload/Download crowdin translations'
+name: 'crowdin-actions'
+
+description: 'Upload crowdin translations'
+
 inputs:
-  crowdin_action:
-    description: upload/download
-    required: true
+  upload_sources:
+    description: 'Upload sources to Crowdin'
+    default: 'true'
+    required: false
+  upload_translations:
+    description: 'Upload translations to Crowdin'
+    default: 'false'
+    required: false
+  branch_name:
+    description: 'To upload or download files to the specified version branch'
+    required: false
+  dryrun_action:
+    description: 'Option to preview the list of managed files'
+    required: false
+    default: 'false'
+
 runs:
   using: docker
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.crowdin_action }}
