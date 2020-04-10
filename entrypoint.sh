@@ -32,8 +32,8 @@ fi
 
 if [[ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]]
 then
-  [[ -z "${REPO_PERSONAL_TOKEN}" ]] && {
-    echo 'Missing REPO_PERSONAL_TOKEN';
+  [[ -z "${GITHUB_TOKEN}" ]] && {
+    echo 'Missing GITHUB_TOKEN';
     exit 1;
   };
 
@@ -53,7 +53,7 @@ then
       echo "PUSH TO BRANCH ${TRANSLATIONS_BRANCH}"
       git add .
       git commit -m "New Crowdin translations by Github Action"
-      git push "https://${GITHUB_ACTOR}:${REPO_PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+      git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
   else
       echo "NOTHING TO COMMIT"
   fi
