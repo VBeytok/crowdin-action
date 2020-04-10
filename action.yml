@@ -18,6 +18,10 @@ inputs:
     description: 'Option to preview the list of managed files'
     required: false
     default: 'false'
+  download_translations:
+    description: 'Make pull request of Crowdin translations'
+    default: 'false'
+
 
 runs:
   using: docker

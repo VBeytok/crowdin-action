@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 echo "STARTING CROWDIN ACTION..."
 
@@ -30,12 +30,11 @@ then
 fi
 
 
-if [[ "$INPUT_UPLOAD_TRANSLATIONS" = true ]]
+if [[ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]]
 then
-
-  [[ -z "${GITHUB_TOKEN}" ]] && {
-    echo 'Missing input "github_token: ${{ secrets.GITHUB_TOKEN }}".';
-    #exit 1;
+  [[ -z "${REPO_PERSONAL_TOKEN}" ]] && {
+    echo 'Missing REPO_PERSONAL_TOKEN';
+    exit 1;
   };
 
   echo "DOWNLOAD TRANSLATIONS"
@@ -45,16 +44,17 @@ then
   git config --global user.email "support+bot@crowdin.com"
   git config --global user.name "Crowdin Bot"
 
-  TRANSLATIONS_BRANCH="crowdin-translations-$(date +%s)"
+  TRANSLATIONS_BRANCH="downloaded-crowdin-translations"
 
   git checkout -b ${TRANSLATIONS_BRANCH}
 
   if [[ -n $(git status -s) ]]
   then
+      echo "PUSH TO BRANCH ${TRANSLATIONS_BRANCH}"
       git add .
-      git commit -m "Downloaded translations from Crowdin"
-      git push origin ${TRANSLATIONS_BRANCH}
+      git commit -m "New Crowdin translations by Github Action"
+      git push "https://${GITHUB_ACTOR}:${REPO_PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
   else
-      echo "IT IS CLEAN"
+      echo "NOTHING TO COMMIT"
   fi
 fi
