@@ -8,7 +8,7 @@ RUN apt-get update \
 
 WORKDIR /usr/crowdin-project
 
-COPY ./ ./
+COPY . .
 COPY entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

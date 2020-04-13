@@ -73,6 +73,12 @@ push_to_branch() {
 
 echo "STARTING CROWDIN ACTION";
 
+set -e;
+
+if [[ "$INPUT_DEBUG_MODE" = true ]]; then
+  set -x;
+fi
+
 declare -a config_options=();
 declare -a options=( "--no-progress" );
 
