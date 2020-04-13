@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -e;
+set -ex;
 
 echo "STARTING CROWDIN ACTION...";
 
 declare -a config_options=();
 declare -a options=( "--no-progress" );
 
-if [[ -n "$INPUT_BRANCH_NAME" ]]; then
+if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
     options+=( "--branch=$INPUT_BRANCH_NAME" );
 fi
 
@@ -33,7 +33,7 @@ download_translations() {
 create_pull_request() {
   TITLE="${1}";
 
-  TRANSLATIONS_BRANCH="${2}";
+  LOCALIZATION_BRANCH="${2}";
   BASE_BRANCH=$(jq -r ".repository.default_branch" "$GITHUB_EVENT_PATH");
 
   AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}";
@@ -42,21 +42,21 @@ create_pull_request() {
 
   PULLS_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls";
 
-  DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${TRANSLATIONS_BRANCH}\"}";
+  DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
   RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" ${PULLS_URL});
   PR=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref');
 
   echo "response ref: ${PR}";
 
-  if [[ "${PR}" != "${TRANSLATIONS_BRANCH}" ]]; then
-      DATA="{\"title\":\"${TITLE}\", \"body\":\"${BODY}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${TRANSLATIONS_BRANCH}\"}";
+  if [[ "${PR}" != "${LOCALIZATION_BRANCH}" ]]; then
+      DATA="{\"title\":\"${TITLE}\", \"body\":\"${BODY}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
       curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" ${PULLS_URL};
 
   fi
 }
 
 push_to_branch() {
-  TRANSLATIONS_BRANCH="downloaded-crowdin-translations";
+  LOCALIZATION_BRANCH=${INPUT_LOCALIZATION_BRANCH_NAME};
 
   COMMIT_MESSAGE="New Crowdin translations by Github Action";
 
@@ -66,21 +66,19 @@ push_to_branch() {
   git config --global user.email "support+bot@crowdin.com";
   git config --global user.name "Crowdin Bot";
 
-  git checkout -b ${TRANSLATIONS_BRANCH};
-
-  if [[ -n $(git ls-remote --heads "${REPO_URL}" ${TRANSLATIONS_BRANCH}) ]]; then
-     git pull "${REPO_URL}" ${TRANSLATIONS_BRANCH} --allow-unrelated-histories;
-  fi
+  git checkout -b ${LOCALIZATION_BRANCH};
 
   download_translations;
 
   if [[ -n $(git status -s) ]]; then
-      echo "PUSH TO BRANCH ${TRANSLATIONS_BRANCH}";
+      echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}";
       git add .;
       git commit -m "${COMMIT_MESSAGE}";
-      git push "${REPO_URL}";
+      git push --force "${REPO_URL}";
 
-      create_pull_request "${COMMIT_MESSAGE}" "${TRANSLATIONS_BRANCH}";
+      if [[ "$INPUT_CREATE_PULL_REQUEST" = true ]]; then
+        create_pull_request "${COMMIT_MESSAGE}" "${LOCALIZATION_BRANCH}";
+      fi
   else
       echo "NOTHING TO COMMIT";
   fi
@@ -97,7 +95,7 @@ fi
 
 if [[ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]]; then
   [[ -z "${GITHUB_TOKEN}" ]] && {
-    echo "can not find GITHUB_TOKEN in environment variables";
+    echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES";
     exit 1;
   };
 
