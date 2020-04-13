@@ -2,6 +2,10 @@ name: 'crowdin-actions'
 
 description: 'Upload crowdin translations'
 
+branding:
+  icon: 'globe'
+  color: 'green'
+
 inputs:
   upload_sources:
     description: 'Upload sources to Crowdin'
