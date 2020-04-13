@@ -1,20 +1,5 @@
 #!/bin/bash
 
-set -ex;
-
-echo "STARTING CROWDIN ACTION...";
-
-declare -a config_options=();
-declare -a options=( "--no-progress" );
-
-if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
-    options+=( "--branch=$INPUT_BRANCH_NAME" );
-fi
-
-if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
-    options+=( "--dryrun" );
-fi
-
 upload_sources() {
   echo "UPLOAD SOURCES";
   crowdin upload sources "${config_options[@]}" "${options[@]}";
@@ -37,22 +22,23 @@ create_pull_request() {
   BASE_BRANCH=$(jq -r ".repository.default_branch" "$GITHUB_EVENT_PATH");
 
   AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}";
-  HEADER="Accept: application/vnd.github.v3+json";
-  HEADER="${HEADER}; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json";
+  HEADER="Accept: application/vnd.github.v3+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json";
 
   PULLS_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls";
 
+  echo "CHECK IF ISSET SAME PULL REQUEST";
   DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
   RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" ${PULLS_URL});
-  PR=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref');
+  PULL_REQUESTS=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref');
 
-  echo "response ref: ${PR}";
+  if [[ "${PULL_REQUESTS}" != "${LOCALIZATION_BRANCH}" ]]; then
+      echo "CREATE PULL REQUEST";
 
-  if [[ "${PR}" != "${LOCALIZATION_BRANCH}" ]]; then
       DATA="{\"title\":\"${TITLE}\", \"body\":\"${BODY}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
       curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" ${PULLS_URL};
-
-  fi
+    else
+        echo "PULL REQUEST ALREADY EXIST";
+    fi
 }
 
 push_to_branch() {
@@ -72,6 +58,7 @@ push_to_branch() {
 
   if [[ -n $(git status -s) ]]; then
       echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}";
+
       git add .;
       git commit -m "${COMMIT_MESSAGE}";
       git push --force "${REPO_URL}";
@@ -83,6 +70,19 @@ push_to_branch() {
       echo "NOTHING TO COMMIT";
   fi
 }
+
+echo "STARTING CROWDIN ACTION";
+
+declare -a config_options=();
+declare -a options=( "--no-progress" );
+
+if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
+    options+=( "--branch=$INPUT_BRANCH_NAME" );
+fi
+
+if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
+    options+=( "--dryrun" );
+fi
 
 if [[ "$INPUT_UPLOAD_SOURCES" = true ]]; then
   upload_sources;
