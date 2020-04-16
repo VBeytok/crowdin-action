@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/bin/sh
 
 upload_sources() {
   echo "UPLOAD SOURCES";
-  crowdin upload sources "${config_options[@]}" "${options[@]}";
+  crowdin upload sources ${CONFIG_OPTIONS} ${OPTIONS};
 }
 
 upload_translations() {
   echo "UPLOAD TRANSLATIONS";
-  crowdin upload translations "${config_options[@]}" "${options[@]}";
+  crowdin upload translations ${CONFIG_OPTIONS} ${OPTIONS};
 }
 
 download_translations() {
   echo "DOWNLOAD TRANSLATIONS";
-  crowdin download "${config_options[@]}" "${options[@]}";
+  crowdin download ${CONFIG_OPTIONS} ${OPTIONS};
 }
 
 create_pull_request() {
@@ -31,14 +31,14 @@ create_pull_request() {
   RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" ${PULLS_URL});
   PULL_REQUESTS=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref');
 
-  if [[ "${PULL_REQUESTS}" != "${LOCALIZATION_BRANCH}" ]]; then
+  if [[ "${PULL_REQUESTS#*$LOCALIZATION_BRANCH}" == "$PULL_REQUESTS" ]]; then
       echo "CREATE PULL REQUEST";
 
       DATA="{\"title\":\"${TITLE}\", \"body\":\"${BODY}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
       curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" ${PULLS_URL};
     else
-        echo "PULL REQUEST ALREADY EXIST";
-    fi
+      echo "PULL REQUEST ALREADY EXIST";
+  fi
 }
 
 push_to_branch() {
@@ -56,7 +56,7 @@ push_to_branch() {
 
   download_translations;
 
-  if [[ -n $(git status -s) ]]; then
+  if [[ -n "$(git status -s)" ]]; then
       echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}";
 
       git add .;
@@ -79,15 +79,20 @@ if [[ "$INPUT_DEBUG_MODE" = true ]]; then
   set -x;
 fi
 
-declare -a config_options=();
-declare -a options=( "--no-progress" );
+# declare -a config_options=();
+# declare -a options=( "--no-progress" );
+
+CONFIG_OPTIONS="";
+OPTIONS="--no-progress";
 
 if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
-    options+=( "--branch=$INPUT_BRANCH_NAME" );
+    # options+=( "--branch=$INPUT_BRANCH_NAME" );
+    OPTIONS="${OPTIONS} --branch=$INPUT_BRANCH_NAME"
 fi
 
 if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
-    options+=( "--dryrun" );
+    #options+=( "--dryrun" );
+    OPTIONS="${OPTIONS} --dryrun"
 fi
 
 if [[ "$INPUT_UPLOAD_SOURCES" = true ]]; then
