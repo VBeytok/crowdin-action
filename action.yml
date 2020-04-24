@@ -1,4 +1,4 @@
-name: 'crowdin-actions'
+name: 'crowdin-action'
 
 description: 'Upload crowdin translations'
 
