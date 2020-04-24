@@ -1,9 +1,9 @@
 name: 'crowdin-action'
 
-description: 'Upload crowdin translations'
+description: 'This action allows you to manage and synchronize localization resources with your Crowdin project'
 
 branding:
-  icon: 'globe'
+  icon: 'refresh-cw'
   color: 'green'
 
 inputs:
