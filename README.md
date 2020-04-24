@@ -15,7 +15,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: crowdin upload
+    - name: crowdin action
       uses: VBeytok/crowdin-action@master
       with:
         upload_translations: true
