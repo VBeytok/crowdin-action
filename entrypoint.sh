@@ -79,19 +79,22 @@ if [[ "$INPUT_DEBUG_MODE" = true ]]; then
   set -x;
 fi
 
-# declare -a config_options=();
-# declare -a options=( "--no-progress" );
-
 CONFIG_OPTIONS="";
 OPTIONS="--no-progress";
 
 if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
-    # options+=( "--branch=$INPUT_BRANCH_NAME" );
     OPTIONS="${OPTIONS} --branch=${INPUT_CROWDIN_BRANCH_NAME}"
 fi
 
+if [[ -n "$INPUT_IDENTITY" ]]; then
+    OPTIONS="${OPTIONS} --identity=${INPUT_IDENTITY}"
+fi
+
+if [[ -n "$INPUT_CONFIG" ]]; then
+    OPTIONS="${OPTIONS} --config=${INPUT_CONFIG}"
+fi
+
 if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
-    #options+=( "--dryrun" );
     OPTIONS="${OPTIONS} --dryrun"
 fi
 

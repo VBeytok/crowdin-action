@@ -18,6 +18,12 @@ inputs:
   crowdin_branch_name:
     description: 'To upload or download files to the specified version branch'
     required: false
+  identity:
+    description: 'Option to specify a path to user-specific credentials'
+    required: false
+  config:
+    description: 'Option to specify a path to the configuration file'
+    required: false
   dryrun_action:
     description: 'Option to preview the list of managed files'
     default: 'false'
