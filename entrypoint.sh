@@ -21,10 +21,6 @@ init_options() {
     OPTIONS="${OPTIONS} --config=${INPUT_CONFIG}"
   fi
 
-  if [[ -n "$INPUT_LANGUAGE" ]]; then
-    OPTIONS="${OPTIONS} --language=${INPUT_LANGUAGE}"
-  fi
-
   if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
     OPTIONS="${OPTIONS} --dryrun"
   fi
@@ -73,6 +69,10 @@ upload_translations() {
 }
 
 download_translations() {
+  if [[ -n "$INPUT_LANGUAGE" ]]; then
+    OPTIONS="${OPTIONS} --language=${INPUT_LANGUAGE}"
+  fi
+
   echo "DOWNLOAD TRANSLATIONS";
   crowdin download ${CONFIG_OPTIONS} ${OPTIONS};
 }
