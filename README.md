@@ -1,6 +1,5 @@
-[<p align='center'><img src='https://support.crowdin.com/assets/logos/crowdin-dark-symbol.png' data-canonical-src='https://support.crowdin.com/assets/logos/crowdin-dark-symbol.png' width='200' height='200' align='center'/></p>](https://crowdin.com)
-
-# Github Crowdin Action
+# Github Crowdin Action For Tests
+If you need stable version use https://github.com/crowdin/github-action
 
 ## What does this action do?
 - Uploads sources to Crowdin.
@@ -51,12 +50,27 @@ In case you don’t want to download translations from Crowdin (download_transla
 ```yaml
 - name: crowdin action
   with:
+    # upload options
     upload_sources: true
     upload_translations: true
-    crowdin_branch_name: l10n_branch
-    dryrun_action: true
-
+    
+    # download options
     download_translations: true
+    language: 'uk'
     localization_branch_name: l10n_crowdin_action
     create_pull_request: true
+    
+    # global options
+    crowdin_branch_name: l10n_branch
+    identity: 'path/to/your/credentials/file'
+    config: '/path/to/your/config/file'
+    dryrun_action: true
+    
+    # config options
+    project_id: ${{ secrets.CROWDIN_PROJECT_ID }}
+    token: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+    source: 'path/to/your/file'
+    translation: 'file/export/pattern'
+    base_url: 'https://crowdin.com'
+    base_path: '/project-base-path'
 ```
