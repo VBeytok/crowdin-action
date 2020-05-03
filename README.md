@@ -57,6 +57,7 @@ In case you don’t want to download translations from Crowdin (download_transla
     # download options
     download_translations: true
     language: 'uk'
+    push_translations: true
     localization_branch_name: l10n_crowdin_action
     create_pull_request: true
     
