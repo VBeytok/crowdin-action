@@ -91,6 +91,18 @@ download_translations() {
     OPTIONS="${OPTIONS} --language=${INPUT_LANGUAGE}"
   fi
 
+  if [[ "$INPUT_SKIP_UNTRANSLATED_STRINGS" = true ]]; then
+    OPTIONS="${OPTIONS} --skip-untranslated-strings"
+  fi
+
+  if [[ "$INPUT_SKIP_UNTRANSLATED_FILES" = true ]]; then
+    OPTIONS="${OPTIONS} --skip-untranslated-files"
+  fi
+
+  if [[ "$INPUT_EXPORT_ONLY_APPROVED" = true ]]; then
+    OPTIONS="${OPTIONS} --export-only-approved"
+  fi
+
   echo "DOWNLOAD TRANSLATIONS";
   crowdin download "${CONFIG_OPTIONS}" "${OPTIONS}";
 }
@@ -121,7 +133,10 @@ create_pull_request() {
     echo "CREATE PULL REQUEST";
 
     DATA="{\"title\":\"${TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
-    curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}";
+    PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}");
+    CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url');
+
+    echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}";
   fi
 }
 
