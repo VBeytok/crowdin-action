@@ -58,7 +58,6 @@ In case you don’t want to download translations from Crowdin (`download_transl
     upload_translations: true
     auto_approve_imported: true
     import_eq_suggestions: true
-    import_duplicates: true
 
     # download translations options
     download_translations: true
