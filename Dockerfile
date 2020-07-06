@@ -1,6 +1,6 @@
-FROM crowdin/cli:alpine
+FROM crowdin/cli
 
-RUN apk --no-cache add git jq;
+RUN apk --no-cache add curl git jq;
 
 COPY . .
 COPY entrypoint.sh /entrypoint.sh
