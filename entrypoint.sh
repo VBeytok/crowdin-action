@@ -137,11 +137,10 @@ create_pull_request() {
         echo "ADD LABELS TO PULL REQUEST"
 
         PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
-        ISSUES_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
+        ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
         DATA="{\"labels\":${INPUT_PULL_REQUEST_LABELS}}";
-        echo "$DATA"
-        PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUES_URL}");
+        curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}";
       else
         echo "JSON OF pull_request_labels IS INVALID"
       fi
