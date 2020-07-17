@@ -3,59 +3,59 @@
 init_options() {
   OPTIONS="--no-progress";
 
-  if [[ "$INPUT_DEBUG_MODE" = true ]]; then
+  if [ "$INPUT_DEBUG_MODE" = true ]; then
     set -x;
 
     OPTIONS="${OPTIONS} --verbose"
   fi
 
-  if [[ -n "$INPUT_CROWDIN_BRANCH_NAME" ]]; then
+  if [ -n "$INPUT_CROWDIN_BRANCH_NAME" ]; then
     OPTIONS="${OPTIONS} --branch=${INPUT_CROWDIN_BRANCH_NAME}"
   fi
 
-  if [[ -n "$INPUT_IDENTITY" ]]; then
+  if [ -n "$INPUT_IDENTITY" ]; then
     OPTIONS="${OPTIONS} --identity=${INPUT_IDENTITY}"
   fi
 
-  if [[ -n "$INPUT_CONFIG" ]]; then
+  if [ -n "$INPUT_CONFIG" ]; then
     OPTIONS="${OPTIONS} --config=${INPUT_CONFIG}"
   fi
 
-  if [[ "$INPUT_DRYRUN_ACTION" = true ]]; then
+  if [ "$INPUT_DRYRUN_ACTION" = true ]; then
     OPTIONS="${OPTIONS} --dryrun"
   fi
 
-  echo ${OPTIONS};
+  echo "${OPTIONS}";
 }
 
 init_config_options() {
   CONFIG_OPTIONS="";
 
-  if [[ -n "$INPUT_PROJECT_ID" ]]; then
+  if [ -n "$INPUT_PROJECT_ID" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --project-id=${INPUT_PROJECT_ID}"
   fi
 
-  if [[ -n "$INPUT_TOKEN" ]]; then
+  if [ -n "$INPUT_TOKEN" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --token=${INPUT_TOKEN}"
   fi
 
-  if [[ -n "$INPUT_BASE_URL" ]]; then
+  if [ -n "$INPUT_BASE_URL" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --base-url=${INPUT_BASE_URL}"
   fi
 
-  if [[ -n "$INPUT_BASE_PATH" ]]; then
+  if [ -n "$INPUT_BASE_PATH" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --base-path=${INPUT_BASE_PATH}"
   fi
 
-  if [[ -n "$INPUT_SOURCE" ]]; then
+  if [ -n "$INPUT_SOURCE" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --source=${INPUT_SOURCE}"
   fi
 
-  if [[ -n "$INPUT_TRANSLATION" ]]; then
+  if [ -n "$INPUT_TRANSLATION" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --translation=${INPUT_TRANSLATION}"
   fi
 
-  echo ${CONFIG_OPTIONS};
+  echo "${CONFIG_OPTIONS}";
 }
 
 upload_sources() {
@@ -64,15 +64,15 @@ upload_sources() {
 }
 
 upload_translations() {
-  if [[ -n "$INPUT_UPLOAD_LANGUAGE" ]]; then
+  if [ -n "$INPUT_UPLOAD_LANGUAGE" ]; then
     OPTIONS="${OPTIONS} --language=${INPUT_UPLOAD_LANGUAGE}"
   fi
 
-  if [[ "$INPUT_AUTO_APPROVE_IMPORTED" = true ]]; then
+  if [ "$INPUT_AUTO_APPROVE_IMPORTED" = true ]; then
     OPTIONS="${OPTIONS} --auto-approve-imported"
   fi
 
-  if [[ "$INPUT_IMPORT_EQ_SUGGESTIONS" = true ]]; then
+  if [ "$INPUT_IMPORT_EQ_SUGGESTIONS" = true ]; then
     OPTIONS="${OPTIONS} --import-eq-suggestions"
   fi
 
@@ -81,21 +81,21 @@ upload_translations() {
 }
 
 download_translations() {
-  if [[ -n "$INPUT_DOWNLOAD_LANGUAGE" ]]; then
+  if [ -n "$INPUT_DOWNLOAD_LANGUAGE" ]; then
     OPTIONS="${OPTIONS} --language=${INPUT_DOWNLOAD_LANGUAGE}"
-  elif [[ -n "$INPUT_LANGUAGE" ]]; then #back compatibility for older versions
+  elif [ -n "$INPUT_LANGUAGE" ]; then #back compatibility for older versions
     OPTIONS="${OPTIONS} --language=${INPUT_LANGUAGE}"
   fi
 
-  if [[ "$INPUT_SKIP_UNTRANSLATED_STRINGS" = true ]]; then
+  if [ "$INPUT_SKIP_UNTRANSLATED_STRINGS" = true ]; then
     OPTIONS="${OPTIONS} --skip-untranslated-strings"
   fi
 
-  if [[ "$INPUT_SKIP_UNTRANSLATED_FILES" = true ]]; then
+  if [ "$INPUT_SKIP_UNTRANSLATED_FILES" = true ]; then
     OPTIONS="${OPTIONS} --skip-untranslated-files"
   fi
 
-  if [[ "$INPUT_EXPORT_ONLY_APPROVED" = true ]]; then
+  if [ "$INPUT_EXPORT_ONLY_APPROVED" = true ]; then
     OPTIONS="${OPTIONS} --export-only-approved"
   fi
 
@@ -149,14 +149,14 @@ push_to_branch() {
 
   git checkout -b "${LOCALIZATION_BRANCH}";
 
-  if [[ -n "$(git status -s)" ]]; then
+  if [ -n "$(git status -s)" ]; then
     echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}";
 
     git add .;
     git commit -m "${COMMIT_MESSAGE}";
     git push --force "${REPO_URL}";
 
-    if [[ "$INPUT_CREATE_PULL_REQUEST" = true ]]; then
+    if [ "$INPUT_CREATE_PULL_REQUEST" = true ]; then
       create_pull_request "${COMMIT_MESSAGE}" "${LOCALIZATION_BRANCH}";
     fi
   else
@@ -172,23 +172,23 @@ set -e;
 OPTIONS=$( init_options );
 CONFIG_OPTIONS=$( init_config_options );
 
-if [[ "$INPUT_UPLOAD_SOURCES" = true ]]; then
+if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
   upload_sources;
 fi
 
-if [[ "$INPUT_UPLOAD_TRANSLATIONS" = true ]]; then
+if [ "$INPUT_UPLOAD_TRANSLATIONS" = true ]; then
   upload_translations;
 fi
 
-if [[ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]]; then
-  [[ -z "${GITHUB_TOKEN}" ]] && {
+if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
+  [ -z "${GITHUB_TOKEN}" ] && {
     echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES";
     exit 1;
   };
 
   download_translations;
 
-  if [[ "$INPUT_PUSH_TRANSLATIONS" = true ]]; then
+  if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
     push_to_branch;
   fi
 fi
