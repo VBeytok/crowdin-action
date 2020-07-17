@@ -1,10 +1,10 @@
 #!/bin/sh
 
 init_options() {
-  OPTIONS="--no-progress";
+  OPTIONS="--no-progress"
 
   if [ "$INPUT_DEBUG_MODE" = true ]; then
-    set -x;
+    set -x
 
     OPTIONS="${OPTIONS} --verbose"
   fi
@@ -25,11 +25,11 @@ init_options() {
     OPTIONS="${OPTIONS} --dryrun"
   fi
 
-  echo "${OPTIONS}";
+  echo "${OPTIONS}"
 }
 
 init_config_options() {
-  CONFIG_OPTIONS="";
+  CONFIG_OPTIONS=""
 
   if [ -n "$INPUT_PROJECT_ID" ]; then
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --project-id=${INPUT_PROJECT_ID}"
@@ -55,12 +55,12 @@ init_config_options() {
     CONFIG_OPTIONS="${CONFIG_OPTIONS} --translation=${INPUT_TRANSLATION}"
   fi
 
-  echo "${CONFIG_OPTIONS}";
+  echo "${CONFIG_OPTIONS}"
 }
 
 upload_sources() {
-  echo "UPLOAD SOURCES";
-  crowdin upload sources "${CONFIG_OPTIONS}" "${OPTIONS}";
+  echo "UPLOAD SOURCES"
+  crowdin upload sources "${CONFIG_OPTIONS}" "${OPTIONS}"
 }
 
 upload_translations() {
@@ -76,8 +76,8 @@ upload_translations() {
     OPTIONS="${OPTIONS} --import-eq-suggestions"
   fi
 
-  echo "UPLOAD TRANSLATIONS";
-  crowdin upload translations "${CONFIG_OPTIONS}" "${OPTIONS}";
+  echo "UPLOAD TRANSLATIONS"
+  crowdin upload translations "${CONFIG_OPTIONS}" "${OPTIONS}"
 }
 
 download_translations() {
@@ -99,106 +99,100 @@ download_translations() {
     OPTIONS="${OPTIONS} --export-only-approved"
   fi
 
-  echo "DOWNLOAD TRANSLATIONS";
-  crowdin download "${CONFIG_OPTIONS}" "${OPTIONS}";
+  echo "DOWNLOAD TRANSLATIONS"
+  crowdin download "${CONFIG_OPTIONS}" "${OPTIONS}"
 }
 
 create_pull_request() {
-  TITLE="${1}";
+  TITLE="${1}"
 
-  LOCALIZATION_BRANCH="${2}";
+  LOCALIZATION_BRANCH="${2}"
 
-  AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}";
-  HEADER="Accept: application/vnd.github.v3+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json";
+  AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
+  HEADER="Accept: application/vnd.github.v3+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json"
 
-  REPO_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}";
-  REPO_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${REPO_URL}");
-  BASE_BRANCH=$(echo "${REPO_RESPONSE}" | jq --raw-output '.default_branch');
+  REPO_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+  REPO_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${REPO_URL}")
+  BASE_BRANCH=$(echo "${REPO_RESPONSE}" | jq --raw-output '.default_branch')
 
-  PULLS_URL="${REPO_URL}/pulls";
+  PULLS_URL="${REPO_URL}/pulls"
 
-  echo "CHECK IF ISSET SAME PULL REQUEST";
-  DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
-  RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" "${PULLS_URL}");
+  echo "CHECK IF ISSET SAME PULL REQUEST"
+  DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
+  RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" "${PULLS_URL}")
 
-  PULL_REQUESTS=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref ');
+  PULL_REQUESTS=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref ')
 
   if echo "$PULL_REQUESTS " | grep -q "$LOCALIZATION_BRANCH "; then
-    echo "PULL REQUEST ALREADY EXIST";
+    echo "PULL REQUEST ALREADY EXIST"
   else
-    echo "CREATE PULL REQUEST";
+    echo "CREATE PULL REQUEST"
 
-    DATA="{\"title\":\"${TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}";
-    PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}");
-    CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url');
+    DATA="{\"title\":\"${TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
+    PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}")
+    CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
 
-#    if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
-#      DATA="{\"labels\": {\"${TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}}";
-#      PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}");
-#      REPO_URL
-#    fi
-
-    echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}";
+    echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}"
   fi
 }
 
 push_to_branch() {
-  LOCALIZATION_BRANCH=${INPUT_LOCALIZATION_BRANCH_NAME};
+  LOCALIZATION_BRANCH=${INPUT_LOCALIZATION_BRANCH_NAME}
 
-  COMMIT_MESSAGE="New Crowdin translations by Github Action";
+  COMMIT_MESSAGE="New Crowdin translations by Github Action"
 
-  REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git";
+  REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
-  echo "CONFIGURATION GIT USER";
-  git config --global user.email "support+bot@crowdin.com";
-  git config --global user.name "Crowdin Bot";
+  echo "CONFIGURATION GIT USER"
+  git config --global user.email "support+bot@crowdin.com"
+  git config --global user.name "Crowdin Bot"
 
-  git checkout -b "${LOCALIZATION_BRANCH}";
+  git checkout -b "${LOCALIZATION_BRANCH}"
 
   if [ -n "$(git status -s)" ]; then
-    echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}";
+    echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}"
 
-    git add .;
-    git commit -m "${COMMIT_MESSAGE}";
-    git push --force "${REPO_URL}";
+    git add .
+    git commit -m "${COMMIT_MESSAGE}"
+    git push --force "${REPO_URL}"
 
     if [ "$INPUT_CREATE_PULL_REQUEST" = true ]; then
-      create_pull_request "${COMMIT_MESSAGE}" "${LOCALIZATION_BRANCH}";
+      create_pull_request "${COMMIT_MESSAGE}" "${LOCALIZATION_BRANCH}"
     fi
   else
-    echo "NOTHING TO COMMIT";
+    echo "NOTHING TO COMMIT"
   fi
 }
 
 # STARTING WORK
-echo "STARTING CROWDIN ACTION";
+echo "STARTING CROWDIN ACTION"
 
-set -e;
+set -e
 
-OPTIONS=$( init_options );
-CONFIG_OPTIONS=$( init_config_options );
+OPTIONS=$(init_options)
+CONFIG_OPTIONS=$(init_config_options)
 
 if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
-  echo "$INPUT_PULL_REQUEST_LABELS";
+  echo "$INPUT_PULL_REQUEST_LABELS"
 fi
 
 if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
-  upload_sources;
+  upload_sources
 fi
 
 if [ "$INPUT_UPLOAD_TRANSLATIONS" = true ]; then
-  upload_translations;
+  upload_translations
 fi
 
 if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
   [ -z "${GITHUB_TOKEN}" ] && {
-    echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES";
-    exit 1;
-  };
+    echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES"
+    exit 1
+  }
 
-  download_translations;
+  download_translations
 
   if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
-    push_to_branch;
+    push_to_branch
   fi
 fi
