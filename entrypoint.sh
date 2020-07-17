@@ -132,6 +132,21 @@ create_pull_request() {
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}")
     CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
 
+    if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
+      if [ "$(echo "$INPUT_PULL_REQUEST_LABELS" | jq -e . > /dev/null 2>&1; echo $?)" -eq 0 ]; then
+        echo "ADD LABELS TO PULL REQUEST"
+
+        PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
+        ISSUES_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
+
+        DATA="{\"labels\":${INPUT_PULL_REQUEST_LABELS}}";
+        echo "$DATA"
+        PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUES_URL}");
+      else
+        echo "JSON OF pull_request_labels IS INVALID"
+      fi
+    fi
+
     echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}"
   fi
 }
@@ -171,10 +186,6 @@ set -e
 
 OPTIONS=$(init_options)
 CONFIG_OPTIONS=$(init_config_options)
-
-if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
-  echo "$INPUT_PULL_REQUEST_LABELS"
-fi
 
 if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
   upload_sources
