@@ -142,6 +142,7 @@ create_pull_request() {
         ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
         DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
+        echo "$DATA"
         PULL_RESPONSE="${PULL_RESPONSE} $(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}")"
       else
         echo "JSON OF pull_request_labels IS INVALID: ${PULL_REQUEST_LABELS}"

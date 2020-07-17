@@ -51,7 +51,7 @@ inputs:
     default: 'true'
     required: false
   pull_request_labels:
-    description: 'To add labels to created pull request (JSON array)'
+    description: 'To add labels to created pull request'
     required: false
 
   # global options
