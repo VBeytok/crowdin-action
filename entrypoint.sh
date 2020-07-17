@@ -132,6 +132,12 @@ create_pull_request() {
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}");
     CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url');
 
+#    if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
+#      DATA="{\"labels\": {\"${TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}}";
+#      PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}");
+#      REPO_URL
+#    fi
+
     echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}";
   fi
 }
@@ -171,6 +177,10 @@ set -e;
 
 OPTIONS=$( init_options );
 CONFIG_OPTIONS=$( init_config_options );
+
+if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
+  echo "$INPUT_PULL_REQUEST_LABELS";
+fi
 
 if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
   upload_sources;
