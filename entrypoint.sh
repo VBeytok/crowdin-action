@@ -84,8 +84,7 @@ upload_translations() {
 
 download_translations() {
   DOWNLOAD_TRANSLATIONS_OPTIONS="${OPTIONS}"
-  echo "$OPTIONS"
-  echo "$DOWNLOAD_TRANSLATIONS_OPTIONS"
+
   if [ -n "$INPUT_DOWNLOAD_LANGUAGE" ]; then
     DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --language=${INPUT_DOWNLOAD_LANGUAGE}"
   elif [ -n "$INPUT_LANGUAGE" ]; then #back compatibility for older versions
@@ -103,6 +102,8 @@ download_translations() {
   if [ "$INPUT_EXPORT_ONLY_APPROVED" = true ]; then
     DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --export-only-approved"
   fi
+
+  echo "$DOWNLOAD_TRANSLATIONS_OPTIONS"
 
   echo "DOWNLOAD TRANSLATIONS"
   crowdin download "${CONFIG_OPTIONS}" "${DOWNLOAD_TRANSLATIONS_OPTIONS}"
@@ -206,14 +207,14 @@ if [ "$INPUT_UPLOAD_TRANSLATIONS" = true ]; then
 fi
 
 if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
-  [ -z "${GITHUB_TOKEN}" ] && {
-    echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES"
-    exit 1
-  }
-
   download_translations
 
   if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
+    [ -z "${GITHUB_TOKEN}" ] && {
+      echo "CAN NOT FIND 'GITHUB_TOKEN' IN ENVIRONMENT VARIABLES"
+      exit 1
+    }
+
     push_to_branch
   fi
 fi
