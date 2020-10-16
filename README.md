@@ -34,8 +34,10 @@ jobs:
         download_translations: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        [I'm an inline-style link](https://www.google.com)
-        If you’re using Crowdin configuration file, you'll need this env variables like [here](https://github.com/crowdin/github-action#crowdin-configuration-file)
+```
+        [this is code](https://this_is_url/)
+```yaml
+        # If you’re using Crowdin configuration file, you'll need this env variables like [here](https://github.com/crowdin/github-action#crowdin-configuration-file)
         CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}	
         CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 ```
