@@ -35,9 +35,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
-        [this is code](https://this_is_url/)
+If you’re using Crowdin configuration file, you'll need this env variables like [here](https://github.com/crowdin/github-action#crowdin-configuration-file)
 ```yaml
-        # If you’re using Crowdin configuration file, you'll need this env variables like [here](https://github.com/crowdin/github-action#crowdin-configuration-file)
         CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}	
         CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 ```
