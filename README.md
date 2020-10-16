@@ -34,7 +34,9 @@ jobs:
         download_translations: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+        
+        # If you’re using Crowdin configuration file, you'll need this env variables like [here](https://github.com/crowdin/github-action#crowdin-configuration-file)
+        CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}	
         CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 ```
 
