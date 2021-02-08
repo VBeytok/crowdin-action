@@ -41,15 +41,15 @@ inputs:
   skip_untranslated_strings:
     description: 'Skip untranslated strings in exported files (does not work with .docx, .html, .md and other document files)'
     default: 'false'
-    required: false
+    required: true
   skip_untranslated_files:
     description: 'Omit downloading not fully downloaded files'
     default: 'false'
-    required: false
+    required: true
   export_only_approved:
     description: 'Include approved translations only in exported files. If not combined with --skip-untranslated-strings option, strings without approval are fulfilled with the source language'
     default: 'false'
-    required: false
+    required: true
   push_translations:
     description: 'Download translations with pushing to branch'
     default: 'true'
@@ -76,16 +76,19 @@ inputs:
   pull_request_labels:
     description: 'To add labels for created pull request'
     required: false
+  pull_request_base_branch_name:
+    description: 'Create pull request to specified branch instead of default one'
+    required: false
 
   # global options
   crowdin_branch_name:
     description: 'Option to upload or download files to the specified version branch in your Crowdin project'
     required: false
   identity:
-    description: 'Option to specify a path to user-specific credentials'
+    description: 'Option to specify a path to user-specific credentials, without / at the beginning'
     required: false
   config:
-    description: 'Option to specify a path to the configuration file'
+    description: 'Option to specify a path to the configuration file, without / at the beginning'
     required: false
   dryrun_action:
     description: 'Option to preview the list of managed files'
