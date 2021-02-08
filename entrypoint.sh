@@ -115,20 +115,15 @@ create_pull_request() {
   if [ -n "$INPUT_PULL_REQUEST_BASE_BRANCH_NAME" ]; then
     BASE_BRANCH="$INPUT_PULL_REQUEST_BASE_BRANCH_NAME"
   else
-    set +x
-    REPO_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${REPO_URL}")
-    view_debug_output
-
-    BASE_BRANCH=$(echo "${REPO_RESPONSE}" | jq --raw-output '.default_branch')
+    BASE_BRANCH=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${REPO_URL}")" | jq --raw-output '.default_branch')
   fi
 
   PULLS_URL="${REPO_URL}/pulls"
 
   echo "CHECK IF ISSET SAME PULL REQUEST"
   DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
-  RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" "${PULLS_URL}")
 
-  PULL_REQUESTS=$(echo "${RESPONSE}" | jq --raw-output '.[] | .head.ref ')
+  PULL_REQUESTS=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" "${PULLS_URL}")" | jq --raw-output '.[] | .head.ref ')
 
   if echo "$PULL_REQUESTS " | grep -q "$LOCALIZATION_BRANCH "; then
     echo "PULL REQUEST ALREADY EXIST"
@@ -140,8 +135,13 @@ create_pull_request() {
     fi
 
     DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}"
+
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}")
-    CREATED_PULL_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
+
+    set +x
+    PULL_REQUESTS_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
+    PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
+    view_debug_output
 
     if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
       PULL_REQUEST_LABELS=$(echo "[\"${INPUT_PULL_REQUEST_LABELS}\"]" | sed 's/, \|,/","/g')
@@ -149,23 +149,16 @@ create_pull_request() {
       if [ "$(echo "$PULL_REQUEST_LABELS" | jq -e . > /dev/null 2>&1; echo $?)" -eq 0 ]; then
         echo "ADD LABELS TO PULL REQUEST"
 
-        PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
         ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
         DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
-        set +x
-        PULL_RESPONSE="${PULL_RESPONSE} $(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}")"
-        view_debug_output
+        curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}"
       else
         echo "JSON OF pull_request_labels IS INVALID: ${PULL_REQUEST_LABELS}"
       fi
     fi
 
-    if [ "$INPUT_DEBUG_MODE" = true ]; then
-      echo "$PULL_RESPONSE"
-    fi
-
-    echo "PULL REQUEST CREATED: ${CREATED_PULL_URL}"
+    echo "PULL REQUEST CREATED: ${PULL_REQUESTS_URL}"
   fi
 }
 
