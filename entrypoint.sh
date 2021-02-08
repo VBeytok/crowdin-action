@@ -4,8 +4,6 @@ init_options() {
   OPTIONS="--no-progress"
 
   if [ "$INPUT_DEBUG_MODE" = true ]; then
-    set -x
-
     OPTIONS="${OPTIONS} --verbose --debug"
   fi
 
@@ -114,10 +112,13 @@ create_pull_request() {
   HEADER="Accept: application/vnd.github.v3+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json"
 
   REPO_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}"
-  if [ -n "$INPUT_PULL_REQUEST_BASE_BRANCH_NAME" ];then
+  if [ -n "$INPUT_PULL_REQUEST_BASE_BRANCH_NAME" ]; then
     BASE_BRANCH="$INPUT_PULL_REQUEST_BASE_BRANCH_NAME"
   else
+    set +x
     REPO_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${REPO_URL}")
+    view_debug_output
+
     BASE_BRANCH=$(echo "${REPO_RESPONSE}" | jq --raw-output '.default_branch')
   fi
 
@@ -152,7 +153,9 @@ create_pull_request() {
         ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
         DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
+        set +x
         PULL_RESPONSE="${PULL_RESPONSE} $(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}")"
+        view_debug_output
       else
         echo "JSON OF pull_request_labels IS INVALID: ${PULL_REQUEST_LABELS}"
       fi
@@ -192,8 +195,16 @@ push_to_branch() {
   fi
 }
 
+view_debug_output() {
+  if [ "$INPUT_DEBUG_MODE" = true ]; then
+    set -x
+  fi
+}
+
 # STARTING WORK
 echo "STARTING CROWDIN ACTION"
+
+view_debug_output
 
 set -e
 
