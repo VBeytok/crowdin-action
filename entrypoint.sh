@@ -1,7 +1,7 @@
 #!/bin/sh
 
 init_options() {
-  OPTIONS="--no-progress"
+  OPTIONS="--no-progress --no-colors"
 
   if [ "$INPUT_DEBUG_MODE" = true ]; then
     OPTIONS="${OPTIONS} --verbose --debug"
@@ -181,8 +181,8 @@ push_to_branch() {
     echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}"
 
     git add .
-    git commit -m "${INPUT_COMMIT_MESSAGE}"
-    git push --force "${REPO_URL}"
+    git commit --no-verify -m "${INPUT_COMMIT_MESSAGE}"
+    git push --no-verify --force "${REPO_URL}"
 
     if [ "$INPUT_CREATE_PULL_REQUEST" = true ]; then
       create_pull_request "${LOCALIZATION_BRANCH}"
