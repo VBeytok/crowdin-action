@@ -140,10 +140,10 @@ create_pull_request() {
 
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${PULL_RESPONSE_DATA}" "${PULLS_URL}")
 
-    set +x
+#    set +x
     PULL_REQUESTS_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
     PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
-    view_debug_output
+#    view_debug_output
 
     if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
       PULL_REQUEST_LABELS=$(echo "[\"${INPUT_PULL_REQUEST_LABELS}\"]" | sed 's/, \|,/","/g')
