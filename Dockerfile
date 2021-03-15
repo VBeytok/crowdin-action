@@ -1,4 +1,4 @@
-FROM crowdin/cli
+FROM beytok/crowdin-cli
 
 RUN apk --no-cache add curl git jq;
 

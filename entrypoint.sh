@@ -1,29 +1,29 @@
 #!/bin/sh
 
 init_options() {
-  OPTIONS="--no-progress --no-colors"
+  set -- --no-progress --no-colors
 
   if [ "$INPUT_DEBUG_MODE" = true ]; then
-    OPTIONS="${OPTIONS} --verbose --debug"
+    set -- "$@" --verbose --debug
   fi
 
   if [ -n "$INPUT_CROWDIN_BRANCH_NAME" ]; then
-    OPTIONS="${OPTIONS} --branch=${INPUT_CROWDIN_BRANCH_NAME}"
+    set -- "$@" --branch="${INPUT_CROWDIN_BRANCH_NAME}"
   fi
 
   if [ -n "$INPUT_IDENTITY" ]; then
-    OPTIONS="${OPTIONS} --identity=${INPUT_IDENTITY}"
+    set -- "$@" --identity="${INPUT_IDENTITY}"
   fi
 
   if [ -n "$INPUT_CONFIG" ]; then
-    OPTIONS="${OPTIONS} --config=${INPUT_CONFIG}"
+    set -- "$@" --config="${INPUT_CONFIG}"
   fi
 
   if [ "$INPUT_DRYRUN_ACTION" = true ]; then
-    OPTIONS="${OPTIONS} --dryrun"
+    set -- "$@" --dryrun
   fi
 
-  echo "${OPTIONS}"
+  echo "$@"
 }
 
 init_config_options() {
@@ -58,7 +58,7 @@ init_config_options() {
 
 upload_sources() {
   echo "UPLOAD SOURCES"
-  crowdin upload sources "${CONFIG_OPTIONS}" "${OPTIONS}"
+  crowdin upload sources "$CONFIG_OPTIONS" "$@"
 }
 
 upload_translations() {
@@ -133,17 +133,17 @@ create_pull_request() {
     echo "CREATE PULL REQUEST"
 
     if [ -n "$INPUT_PULL_REQUEST_BODY" ]; then
-      BODY=",\"body\":\"${INPUT_PULL_REQUEST_BODY}\""
+      BODY=",\"body\":\"${INPUT_PULL_REQUEST_BODY//$'\n'/\\n}\""
     fi
 
-    PULL_RESPONSE_DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}"
+    PULL_RESPONSE_DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}}"
 
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${PULL_RESPONSE_DATA}" "${PULLS_URL}")
 
-#    set +x
+    set +x
     PULL_REQUESTS_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
     PULL_REQUESTS_NUMBER=$(echo "${PULL_RESPONSE}" | jq '.number')
-#    view_debug_output
+    view_debug_output
 
     if [ -n "$INPUT_PULL_REQUEST_LABELS" ]; then
       PULL_REQUEST_LABELS=$(echo "[\"${INPUT_PULL_REQUEST_LABELS}\"]" | sed 's/, \|,/","/g')
@@ -174,8 +174,12 @@ push_to_branch() {
   git config --global user.name "Crowdin Bot"
 
   git checkout "${GITHUB_REF#refs/heads/}"
-
-  git checkout -b "${LOCALIZATION_BRANCH}"
+  
+  if [ -n "$(git show-ref refs/heads/${LOCALIZATION_BRANCH})" ]; then
+    git checkout "${LOCALIZATION_BRANCH}"
+  else
+    git checkout -b "${LOCALIZATION_BRANCH}"
+  fi
 
   if [ -n "$(git status -s)" ]; then
     echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}"
@@ -204,11 +208,33 @@ view_debug_output
 
 set -e
 
-OPTIONS=$(init_options)
+set -- --no-progress --no-colors
+
+if [ "$INPUT_DEBUG_MODE" = true ]; then
+  set -- "$@" --verbose --debug
+fi
+
+if [ -n "$INPUT_CROWDIN_BRANCH_NAME" ]; then
+  set -- "$@" --branch="${INPUT_CROWDIN_BRANCH_NAME}"
+fi
+
+if [ -n "$INPUT_IDENTITY" ]; then
+  set -- "$@" --identity="${INPUT_IDENTITY}"
+fi
+
+if [ -n "$INPUT_CONFIG" ]; then
+  set -- "$@" --config="${INPUT_CONFIG}"
+fi
+
+if [ "$INPUT_DRYRUN_ACTION" = true ]; then
+  set -- "$@" --dryrun
+fi
+
+#OPTIONS=$(init_options)
 CONFIG_OPTIONS=$(init_config_options)
 
 if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
-  upload_sources
+  upload_sources "$@"
 fi
 
 if [ "$INPUT_UPLOAD_TRANSLATIONS" = true ]; then
