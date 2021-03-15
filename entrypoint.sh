@@ -123,9 +123,9 @@ create_pull_request() {
     BASE_BRANCH="${GITHUB_REF#refs/heads/}"
   fi
 
-  DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
+  PULL_REQUESTS_DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
 
-  PULL_REQUESTS=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${DATA}" "${PULLS_URL}")" | jq --raw-output '.[] | .head.ref ')
+  PULL_REQUESTS=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${PULL_REQUESTS_DATA}" "${PULLS_URL}")" | jq --raw-output '.[] | .head.ref ')
 
   if echo "$PULL_REQUESTS " | grep -q "$LOCALIZATION_BRANCH "; then
     echo "PULL REQUEST ALREADY EXIST"
@@ -136,9 +136,9 @@ create_pull_request() {
       BODY=",\"body\":\"${INPUT_PULL_REQUEST_BODY}\""
     fi
 
-    DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}"
+    PULL_RESPONSE_DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}"
 
-    PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${DATA}" "${PULLS_URL}")
+    PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${PULL_RESPONSE_DATA}" "${PULLS_URL}")
 
     set +x
     PULL_REQUESTS_URL=$(echo "${PULL_RESPONSE}" | jq '.html_url')
@@ -153,8 +153,8 @@ create_pull_request() {
 
         ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
-        DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
-        curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${DATA}" "${ISSUE_URL}"
+        LABELS_DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
+        curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${LABELS_DATA}" "${ISSUE_URL}"
       else
         echo "JSON OF pull_request_labels IS INVALID: ${PULL_REQUEST_LABELS}"
       fi
