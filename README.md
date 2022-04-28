@@ -53,7 +53,7 @@ curl --location --request GET 'https://crowdin.com/api/v2/applications/{app-iden
 
 Вся логіка ендпоінта розташована в `ApplicationSubscriptionService.php`
 
-## 402 Payment Required
+### 402 Payment Required
 
 Респонс вертає лінку для купівлі апки на 3 можливих види планів.
 - Місячний
