@@ -1,6 +1,6 @@
-FROM beytok/crowdin-cli
+FROM crowdin/cli:latest
 
-RUN apk --no-cache add curl git jq;
+RUN apk --no-cache add curl git jq gnupg;
 
 COPY . .
 COPY entrypoint.sh /entrypoint.sh

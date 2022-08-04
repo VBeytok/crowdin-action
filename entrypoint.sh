@@ -1,64 +1,18 @@
 #!/bin/sh
 
-#init_options() {
-#  set -- --no-progress --no-colors
-#
-#  if [ "$INPUT_DEBUG_MODE" = true ]; then
-#    set -- "$@" --verbose --debug
-#  fi
-#
-#  if [ -n "$INPUT_CROWDIN_BRANCH_NAME" ]; then
-#    set -- "$@" --branch="${INPUT_CROWDIN_BRANCH_NAME}"
-#  fi
-#
-#  if [ -n "$INPUT_IDENTITY" ]; then
-#    set -- "$@" --identity="${INPUT_IDENTITY}"
-#  fi
-#
-#  if [ -n "$INPUT_CONFIG" ]; then
-#    set -- "$@" --config="${INPUT_CONFIG}"
-#  fi
-#
-#  if [ "$INPUT_DRYRUN_ACTION" = true ]; then
-#    set -- "$@" --dryrun
-#  fi
-#
-#  echo "$@"
-#}
-
-#init_config_options() {
-#  CONFIG_OPTIONS=""
-#
-#  if [ -n "$INPUT_PROJECT_ID" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --project-id=${INPUT_PROJECT_ID}"
-#  fi
-#
-#  if [ -n "$INPUT_TOKEN" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --token=${INPUT_TOKEN}"
-#  fi
-#
-#  if [ -n "$INPUT_BASE_URL" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --base-url=${INPUT_BASE_URL}"
-#  fi
-#
-#  if [ -n "$INPUT_BASE_PATH" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --base-path=${INPUT_BASE_PATH}"
-#  fi
-#
-#  if [ -n "$INPUT_SOURCE" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --source=${INPUT_SOURCE}"
-#  fi
-#
-#  if [ -n "$INPUT_TRANSLATION" ]; then
-#    CONFIG_OPTIONS="${CONFIG_OPTIONS} --translation=${INPUT_TRANSLATION}"
-#  fi
-#
-#  echo "${CONFIG_OPTIONS}"
-#}
+if [ "$INPUT_DEBUG_MODE" = true ] || [ -n "$RUNNER_DEBUG" ]; then
+  echo '---------------------------'
+  printenv
+  echo '---------------------------'
+fi
 
 upload_sources() {
+  if [ -n "$INPUT_UPLOAD_SOURCES_ARGS" ]; then
+    UPLOAD_SOURCES_OPTIONS="${UPLOAD_SOURCES_OPTIONS} ${INPUT_UPLOAD_SOURCES_ARGS}"
+  fi
+
   echo "UPLOAD SOURCES"
-  crowdin upload sources "$@"
+  crowdin upload sources "$@" $UPLOAD_SOURCES_OPTIONS
 }
 
 upload_translations() {
@@ -72,6 +26,10 @@ upload_translations() {
 
   if [ "$INPUT_IMPORT_EQ_SUGGESTIONS" = true ]; then
     UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} --import-eq-suggestions"
+  fi
+
+  if [ -n "$INPUT_UPLOAD_TRANSLATIONS_ARGS" ]; then
+    UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} ${INPUT_UPLOAD_TRANSLATIONS_ARGS}"
   fi
 
   echo "UPLOAD TRANSLATIONS"
@@ -97,6 +55,10 @@ download_translations() {
     DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --export-only-approved"
   fi
 
+  if [ -n "$INPUT_DOWNLOAD_TRANSLATIONS_ARGS" ]; then
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} ${INPUT_DOWNLOAD_TRANSLATIONS_ARGS}"
+  fi
+
   echo "DOWNLOAD TRANSLATIONS"
   crowdin download "$@" $DOWNLOAD_TRANSLATIONS_OPTIONS
 }
@@ -107,7 +69,11 @@ create_pull_request() {
   AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
   HEADER="Accept: application/vnd.github.v3+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json"
 
-  REPO_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+  if [ -n "$INPUT_GITHUB_API_BASE_URL" ]; then
+    REPO_URL="https://${INPUT_GITHUB_API_BASE_URL}/repos/${GITHUB_REPOSITORY}"
+  else
+    REPO_URL="https://api.${INPUT_GITHUB_BASE_URL}/repos/${GITHUB_REPOSITORY}"
+  fi
 
   PULLS_URL="${REPO_URL}/pulls"
 
@@ -116,13 +82,18 @@ create_pull_request() {
   if [ -n "$INPUT_PULL_REQUEST_BASE_BRANCH_NAME" ]; then
     BASE_BRANCH="$INPUT_PULL_REQUEST_BASE_BRANCH_NAME"
   else
-    BASE_BRANCH="${GITHUB_REF#refs/heads/}"
+    if [ -n "$GITHUB_HEAD_REF" ]; then
+      BASE_BRANCH=${GITHUB_HEAD_REF}
+    else
+      BASE_BRANCH=${GITHUB_REF#refs/heads/}
+    fi
   fi
 
-  PULL_REQUESTS_DATA="{\"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\"}"
+  PULL_REQUESTS_QUERY_PARAMS="?base=${BASE_BRANCH}&head=${LOCALIZATION_BRANCH}"
 
-  PULL_REQUESTS=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET --data "${PULL_REQUESTS_DATA}" "${PULLS_URL}")" | jq --raw-output '.[] | .head.ref ')
+  PULL_REQUESTS=$(echo "$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X GET "${PULLS_URL}${PULL_REQUESTS_QUERY_PARAMS}")" | jq --raw-output '.[] | .head.ref ')
 
+  # check if pull request exist
   if echo "$PULL_REQUESTS " | grep -q "$LOCALIZATION_BRANCH "; then
     echo "PULL REQUEST ALREADY EXIST"
   else
@@ -133,7 +104,7 @@ create_pull_request() {
     fi
 
     PULL_RESPONSE_DATA="{\"title\":\"${INPUT_PULL_REQUEST_TITLE}\", \"base\":\"${BASE_BRANCH}\", \"head\":\"${LOCALIZATION_BRANCH}\" ${BODY}}"
-
+    # create pull request
     PULL_RESPONSE=$(curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X POST --data "${PULL_RESPONSE_DATA}" "${PULLS_URL}")
 
     set +x
@@ -150,6 +121,8 @@ create_pull_request() {
         ISSUE_URL="${REPO_URL}/issues/${PULL_REQUESTS_NUMBER}"
 
         LABELS_DATA="{\"labels\":${PULL_REQUEST_LABELS}}"
+
+        # add labels to created pull request
         curl -sSL -H "${AUTH_HEADER}" -H "${HEADER}" -X PATCH --data "${LABELS_DATA}" "${ISSUE_URL}"
       else
         echo "JSON OF pull_request_labels IS INVALID: ${PULL_REQUEST_LABELS}"
@@ -163,42 +136,84 @@ create_pull_request() {
 push_to_branch() {
   LOCALIZATION_BRANCH=${INPUT_LOCALIZATION_BRANCH_NAME}
 
-  REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+  REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${INPUT_GITHUB_BASE_URL}/${GITHUB_REPOSITORY}.git"
 
   echo "CONFIGURATION GIT USER"
-  git config --global user.email "support+bot@crowdin.com"
-  git config --global user.name "Crowdin Bot"
+  git config --global user.email "${INPUT_GITHUB_USER_EMAIL}"
+  git config --global user.name "${INPUT_GITHUB_USER_NAME}"
 
-  git checkout "${GITHUB_REF#refs/heads/}"
-  
+  if [ "$INPUT_SKIP_REF_CHECKOUT" != true ] && [ ${GITHUB_REF#refs/heads/} != $GITHUB_REF ]; then
+    git checkout "${GITHUB_REF#refs/heads/}"
+  fi
+
   if [ -n "$(git show-ref refs/heads/${LOCALIZATION_BRANCH})" ]; then
     git checkout "${LOCALIZATION_BRANCH}"
   else
     git checkout -b "${LOCALIZATION_BRANCH}"
   fi
 
-  if [ -n "$(git status -s)" ]; then
-    echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}"
+  git add .
 
-    git add .
-    git commit --no-verify -m "${INPUT_COMMIT_MESSAGE}"
-    git push --no-verify --force "${REPO_URL}"
-
-    if [ "$INPUT_CREATE_PULL_REQUEST" = true ]; then
-      create_pull_request "${LOCALIZATION_BRANCH}"
-    fi
-  else
+  if [ ! -n "$(git status -s)" ]; then
     echo "NOTHING TO COMMIT"
+    return
+  fi
+
+  echo "PUSH TO BRANCH ${LOCALIZATION_BRANCH}"
+  git commit --no-verify -m "${INPUT_COMMIT_MESSAGE}"
+  git push --no-verify --force "${REPO_URL}"
+
+  if [ "$INPUT_CREATE_PULL_REQUEST" = true ]; then
+    create_pull_request "${LOCALIZATION_BRANCH}"
   fi
 }
 
 view_debug_output() {
-  if [ "$INPUT_DEBUG_MODE" = true ]; then
+  if [ "$INPUT_DEBUG_MODE" = true ] || [ -n "$RUNNER_DEBUG" ]; then
     set -x
   fi
 }
 
+setup_commit_signing() {
+  echo "FOUND PRIVATE KEY, WILL SETUP GPG KEYSTORE"
+
+  echo "${INPUT_GPG_PRIVATE_KEY}" > private.key
+
+  gpg --import --batch private.key
+
+  GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | grep -o "rsa\d\+\/\(\w\+\)" | head -n1 | sed "s/rsa\d\+\/\(\w\+\)/\1/")
+  GPG_KEY_OWNER_NAME=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/.\+] \(.\+\) <\(.\+\)>/\1/")
+  GPG_KEY_OWNER_EMAIL=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/.\+] \(.\+\) <\(.\+\)>/\2/")
+  echo "Imported key information:"
+  echo "      Key id: ${GPG_KEY_ID}"
+  echo "  Owner name: ${GPG_KEY_OWNER_NAME}"
+  echo " Owner email: ${GPG_KEY_OWNER_EMAIL}"
+
+  git config --global user.signingkey "$GPG_KEY_ID"
+  git config --global commit.gpgsign true
+
+  export GPG_TTY=$(tty)
+  # generate sign to store passphrase in cache for "git commit"
+  echo "test" | gpg --clearsign --pinentry-mode=loopback --passphrase "${INPUT_GPG_PASSPHRASE}" > /dev/null 2>&1
+
+  rm private.key
+}
+
+get_branch_available_options() {
+  for OPTION in "$@" ; do
+    if echo "$OPTION" | egrep -vq "^(--dryrun|--branch|--source|--translation)"; then
+      AVAILABLE_OPTIONS="${AVAILABLE_OPTIONS} ${OPTION}"
+    fi
+  done
+
+  echo "$AVAILABLE_OPTIONS"
+}
+
 echo "STARTING CROWDIN ACTION"
+
+cd "${GITHUB_WORKSPACE}" || exit 1
+
+git config --global --add safe.directory $GITHUB_WORKSPACE
 
 view_debug_output
 
@@ -207,7 +222,7 @@ set -e
 #SET OPTIONS
 set -- --no-progress --no-colors
 
-if [ "$INPUT_DEBUG_MODE" = true ]; then
+if [ "$INPUT_DEBUG_MODE" = true ] || [ -n "$RUNNER_DEBUG" ]; then
   set -- "$@" --verbose --debug
 fi
 
@@ -252,8 +267,19 @@ if [ -n "$INPUT_TRANSLATION" ]; then
   set -- "$@" --translation="${INPUT_TRANSLATION}"
 fi
 
-#OPTIONS=$(init_options)
-#CONFIG_OPTIONS=$(init_config_options)
+#EXECUTE COMMANDS
+
+if [ -n "$INPUT_ADD_CROWDIN_BRANCH" ]; then
+  NEW_BRANCH_OPTIONS=$( get_branch_available_options "$@" )
+
+  if [ -n "$INPUT_NEW_BRANCH_PRIORITY" ]; then
+    NEW_BRANCH_OPTIONS="${NEW_BRANCH_OPTIONS} --priority=${INPUT_NEW_BRANCH_PRIORITY}"
+  fi
+
+  echo "CREATING BRANCH $INPUT_ADD_CROWDIN_BRANCH"
+
+  crowdin branch add $INPUT_ADD_CROWDIN_BRANCH $NEW_BRANCH_OPTIONS --title="${INPUT_NEW_BRANCH_TITLE}" --export-pattern="${INPUT_NEW_BRANCH_EXPORT_PATTERN}"
+fi
 
 if [ "$INPUT_UPLOAD_SOURCES" = true ]; then
   upload_sources "$@"
@@ -272,6 +298,16 @@ if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
       exit 1
     }
 
+    [ -n "${INPUT_GPG_PRIVATE_KEY}" ] && [ -n "${INPUT_GPG_PASSPHRASE}" ] && {
+      setup_commit_signing
+    }
+
     push_to_branch
   fi
+fi
+
+if [ -n "$INPUT_DELETE_CROWDIN_BRANCH" ]; then
+  echo "REMOVING BRANCH $INPUT_DELETE_CROWDIN_BRANCH"
+
+  crowdin branch delete $INPUT_DELETE_CROWDIN_BRANCH $( get_branch_available_options "$@" )
 fi
